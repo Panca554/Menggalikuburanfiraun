@@ -1,1 +1,1161 @@
-Selamat datang di Mesir, selamat belajar
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>MISTERI PIRAMIDA: PLATFORMER EDUKASI</title>
+<style>
+  * { margin:0; padding:0; box-sizing:border-box; font-family:'Segoe UI','Palatino Linotype',serif; user-select:none; }
+  body {
+    background:#1a130c;
+    display:flex; align-items:center; justify-content:center;
+    min-height:100vh; padding:12px;
+  }
+  .game-wrapper {
+    max-width:1150px; width:100%;
+    background:#2b241c; border-radius:28px;
+    box-shadow:0 20px 40px rgba(0,0,0,.8), 0 0 0 2px #b8975b inset;
+    padding:16px;
+  }
+  .game-container {
+    background:#3e3226; border-radius:22px;
+    padding:16px 16px 20px;
+    box-shadow:0 8px 0 #1a1510, 0 0 0 2px #c9a45c;
+  }
+  .top-panel {
+    display:flex; justify-content:space-between; align-items:center;
+    margin-bottom:12px; color:#f5e6c4; flex-wrap:wrap; gap:8px;
+  }
+  .title-game {
+    font-size:1.2rem; font-weight:bold; letter-spacing:1.5px;
+    background:linear-gradient(135deg,#f5d98c,#caa84b);
+    -webkit-background-clip:text; -webkit-text-fill-color:transparent;
+    background-clip:text;
+  }
+  .mini-map { display:flex; gap:5px; flex-wrap:wrap; }
+  .room-dot {
+    width:32px; height:32px; border-radius:50%;
+    background:#4e3f2e; border:2px solid #7a623f;
+    display:flex; align-items:center; justify-content:center;
+    font-size:.75rem; font-weight:bold; color:#ccb28b;
+    transition:.3s; box-shadow:0 2px 0 #1f1a13;
+  }
+  .room-dot.completed { background:#c9a45c; color:#1e1a14; border-color:#f5e6c4; box-shadow:0 0 10px #e6c87a; }
+  .room-dot.active { border:3px solid #ffd966; background:#7a5f3a; color:#fef3d6; }
+
+  .main-layout { display:flex; gap:14px; flex-wrap:wrap; }
+
+  /* ============ CANVAS AREA ============ */
+  .canvas-panel {
+    flex:3; min-width:340px;
+    background:#1a120b; border-radius:16px;
+    border:4px solid #b8975b;
+    box-shadow:inset 0 0 30px #0f0b07, 0 6px 0 #1f1a13;
+    overflow:hidden;
+    position:relative;
+  }
+  #gameCanvas {
+    display:block; width:100%; height:auto;
+    background:#2b1f12;
+    image-rendering:pixelated;
+    touch-action:none;
+  }
+  .canvas-overlay {
+    position:absolute; inset:0;
+    display:flex; flex-direction:column;
+    align-items:center; justify-content:center;
+    background:rgba(10,6,2,.88); z-index:20;
+    color:#f5e6c4; text-align:center; padding:16px;
+  }
+  .canvas-overlay h2 { color:#ffd966; font-size:1.4rem; margin-bottom:8px; text-shadow:2px 2px 0 #3a2a0a; }
+  .canvas-overlay p { font-size:.88rem; max-width:420px; line-height:1.5; margin-bottom:12px; }
+  .controls-info {
+    display:flex; gap:8px; flex-wrap:wrap; justify-content:center;
+    font-size:.75rem; color:#caa84b; margin-top:8px;
+  }
+  .key-badge {
+    background:#3e2f1f; border:2px solid #7a623f; border-radius:8px;
+    padding:4px 10px; font-weight:bold; color:#ffecb3; min-width:38px; text-align:center;
+  }
+
+  /* ============ SIDE PANEL ============ */
+  .side-panel {
+    flex:2; min-width:250px;
+    background:#2b2118; border-radius:16px;
+    border:4px solid #b8975b;
+    box-shadow:inset 0 0 30px #0f0b07, 0 6px 0 #1f1a13;
+    padding:14px 12px;
+    display:flex; flex-direction:column; gap:10px;
+    max-height:640px; overflow-y:auto;
+  }
+  .mission-badge {
+    background:#4e3a22; border-radius:40px; padding:6px 10px;
+    color:#ffecb3; font-size:.82rem; text-align:center;
+    border:2px solid #be9d5a;
+  }
+  .score-board {
+    display:flex; justify-content:space-between;
+    background:#1e1810; padding:8px 10px; border-radius:30px;
+    border:1px solid #a8874a;
+  }
+  .score-item { text-align:center; }
+  .score-value { font-size:1.15rem; font-weight:bold; color:#ffd966; text-shadow:1px 1px 0 #6b4f1c; }
+  .score-label { font-size:.6rem; text-transform:uppercase; letter-spacing:.5px; color:#caa84b; }
+
+  .symbol-collection {
+    display:flex; flex-wrap:wrap; gap:6px; justify-content:center;
+    padding:6px; background:#1e1810; border-radius:16px;
+    border:1px solid #7a623f; min-height:48px;
+  }
+  .symbol-badge {
+    width:34px; height:34px; border-radius:50%;
+    background:#4e3f2e; border:2px dashed #7a623f;
+    display:flex; align-items:center; justify-content:center;
+    font-size:1rem; color:#66553b; opacity:.4; transition:.3s;
+  }
+  .symbol-badge.collected {
+    background:#c9a45c; border:2px solid #f5e6c4; color:#1e1a14;
+    opacity:1; box-shadow:0 0 10px #f3d48b;
+  }
+
+  .challenge-box {
+    background:#1e1810; border-radius:14px; padding:12px;
+    border:2px solid #a8874a;
+    box-shadow:inset 0 0 20px #0d0a06;
+  }
+  .challenge-question {
+    font-size:.85rem; color:#ffefcf; margin-bottom:8px;
+    font-weight:500; line-height:1.4;
+  }
+  .options { display:flex; flex-direction:column; gap:6px; margin:8px 0; }
+  .option-btn {
+    background:#3e2f1f; border:2px solid #7a623f; border-radius:30px;
+    padding:8px 10px; color:#f2e0bb; text-align:left;
+    font-size:.78rem; cursor:pointer; transition:.15s;
+    box-shadow:0 3px 0 #1f1a13; line-height:1.3;
+  }
+  .option-btn:hover:not(:disabled) { background:#5a452b; border-color:#dbbd80; }
+  .option-btn:disabled { opacity:.7; cursor:not-allowed; }
+  .option-btn.correct-highlight { background:#3b6b3b; border-color:#9edb9e; color:#fff8e0; }
+  .option-btn.wrong-highlight { background:#7a3b3b; border-color:#c97a7a; color:#ffe0e0; }
+
+  .feedback {
+    font-size:.78rem; color:#e9d7a8; background:#2b231a;
+    padding:8px; border-radius:10px;
+    border-left:5px solid #c9a45c; line-height:1.4;
+  }
+
+  .btn-group { display:flex; flex-wrap:wrap; gap:6px; justify-content:center; }
+  .btn {
+    background:linear-gradient(145deg,#4b3a26,#2f2419);
+    border:2px solid #b8975b; border-radius:30px;
+    padding:8px 14px; font-weight:bold; color:#ffecb3;
+    font-size:.78rem; cursor:pointer;
+    box-shadow:0 4px 0 #1a1410;
+    transition:.1s;
+  }
+  .btn:active { transform:translateY(2px); box-shadow:0 2px 0 #1a1410; }
+  .btn:disabled { opacity:.5; cursor:not-allowed; }
+  .btn-primary {
+    background:linear-gradient(145deg,#c9a45c,#9b7b3c);
+    color:#1e1a14; border-color:#f5e6c4; box-shadow:0 4px 0 #5a431f;
+  }
+
+  .hidden { display:none !important; }
+
+  /* End screen */
+  .end-screen {
+    background:#1e1810f0; border-radius:20px; padding:20px;
+    text-align:center; color:#f5e6c4;
+    border:4px solid #f5d98c; box-shadow:0 0 60px #ffd966;
+    margin-top:12px; animation:glow 2s infinite alternate;
+  }
+  @keyframes glow {
+    from { box-shadow:0 0 20px #c9a45c; }
+    to { box-shadow:0 0 50px #ffd966, 0 0 80px #b8975b; }
+  }
+  .end-title { font-size:1.6rem; color:#ffd966; text-shadow:3px 3px 0 #6b4f1c; margin-bottom:12px; }
+  .rekap-ilmu {
+    display:grid; grid-template-columns:repeat(auto-fit,minmax(140px,1fr));
+    gap:6px; margin:14px 0; text-align:left;
+  }
+  .ilmu-item {
+    background:#2b231a; border-radius:10px; padding:6px 10px;
+    font-size:.72rem; border-left:4px solid #c9a45c;
+  }
+  .ilmu-item strong { color:#ffd966; }
+  .final-score { font-size:1.3rem; color:#f5d98c; margin:12px 0; }
+
+  @media (max-width:720px) {
+    .canvas-panel { min-width:100%; }
+    .side-panel { max-height:none; }
+  }
+</style>
+</head>
+<body>
+<div class="game-wrapper">
+  <div class="game-container">
+    <div class="top-panel">
+      <div class="title-game">🏛️ MISTERI PIRAMIDA</div>
+      <div class="mini-map" id="miniMap"></div>
+    </div>
+
+    <div id="mainGame" class="main-layout">
+      <!-- CANVAS PLATFORMER -->
+      <div class="canvas-panel">
+        <canvas id="gameCanvas" width="720" height="360"></canvas>
+
+        <!-- Overlay start / level complete -->
+        <div class="canvas-overlay" id="overlay">
+          <h2 id="overlayTitle">MISTERI PIRAMIDA</h2>
+          <p id="overlayText">Bantu arkeolog mencapai pintu ruangan! Gunakan tombol panah / A-D untuk berjalan, dan SPASI / panah atas untuk melompat.</p>
+          <div class="controls-info">
+            <span class="key-badge">← →</span> Berjalan
+            <span class="key-badge">SPASI</span> Lompat
+            <span class="key-badge">R</span> Ulangi level
+          </div>
+          <div style="margin-top:14px;">
+            <button class="btn btn-primary" id="playBtn">▶ MULAI PETUALANGAN</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- SIDE PANEL -->
+      <div class="side-panel">
+        <div class="mission-badge">🔍 Temukan Makam Firaun</div>
+
+        <div class="score-board">
+          <div class="score-item"><div class="score-value" id="scoreDisplay">0</div><div class="score-label">Skor</div></div>
+          <div class="score-item"><div class="score-value" id="roomsDisplay">0/8</div><div class="score-label">Ruangan</div></div>
+          <div class="score-item"><div class="score-value" id="percentDisplay">0%</div><div class="score-label">Berhasil</div></div>
+        </div>
+
+        <div class="symbol-collection" id="symbolCollection"></div>
+
+        <div class="challenge-box">
+          <div class="challenge-question" id="challengeQuestion">Pilih jawaban setelah mencapai pintu!</div>
+          <div class="options" id="optionsContainer"></div>
+          <div class="feedback" id="feedback"></div>
+        </div>
+
+        <div class="btn-group">
+          <button class="btn" id="hintBtn">💡 Petunjuk</button>
+          <button class="btn" id="resetBtn">🔄 Ulangi</button>
+        </div>
+        <div id="nextRoomBtnContainer" style="text-align:center;"></div>
+      </div>
+    </div>
+
+    <div id="endScreen" class="end-screen hidden"></div>
+  </div>
+</div>
+
+<script>
+(function(){
+  // ============================================================
+  // DATA RUANGAN (soal menantang)
+  // ============================================================
+  const rooms = [
+    {
+      name:"RUANG ARKEOLOGI", icon:"🏺",
+      desc:"Artefak: patung, tembikar, sarkofagus.",
+      question:"Arkeolog menemukan tembikar berisi biji gandum di dekat lumbung kuno. Fungsi tembikar tersebut paling tepat adalah...",
+      options:[
+        "Wadah penyimpanan hasil pertanian masyarakat Mesir Kuno.",
+        "Alat musik ritual pemujaan dewa.",
+        "Mata uang untuk perdagangan.",
+        "Senjata perang."
+      ],
+      correct:0, symbol:"🏺",
+      hint:"Biji gandum di dalam tembikar menunjukkan fungsi penyimpanan pangan."
+    },
+    {
+      name:"RUANG FILOLOGI", icon:"📜",
+      desc:"Gulungan papirus bertulisan kuno.",
+      question:"Papirus menceritakan silsilah raja dan upacara keagamaan dalam bahasa yang sudah punah. Ilmu bantu paling utama untuk memahami isinya adalah...",
+      options:[
+        "Numismatik, karena mempelajari koin.",
+        "Filologi, karena mengkaji bahasa dan isi naskah kuno.",
+        "Epigrafi, karena mempelajari prasasti batu.",
+        "Geografi, karena mempelajari letak wilayah."
+      ],
+      correct:1, symbol:"📜",
+      hint:"Filologi = ilmu yang mendalami teks/naskah kuno, termasuk bahasanya."
+    },
+    {
+      name:"RUANG PALEOGRAFI", icon:"✍️",
+      desc:"Berbagai bentuk tulisan kuno.",
+      question:"Prasasti A memakai hieroglif rumit, Prasasti B memakai tulisan melengkung sederhana. Ilmu bantu untuk membandingkan bentuk dan perkembangan tulisan tersebut adalah...",
+      options:[ "Filologi", "Numismatik", "Paleografi", "Sosiologi" ],
+      correct:2, symbol:"✍️",
+      hint:"Paleografi khusus mempelajari bentuk dan perkembangan tulisan kuno, bukan isi teks."
+    },
+    {
+      name:"RUANG NUMISMATIK", icon:"🪙",
+      desc:"Koleksi koin kuno dengan gambar penguasa.",
+      question:"Koin Mesir Kuno menampilkan wajah raja dan simbol timbangan. Informasi sejarah paling mungkin diperoleh adalah...",
+      options:[
+        "Sistem kepercayaan masyarakat.",
+        "Bentuk arsitektur piramida.",
+        "Kekuasaan raja dan aktivitas perdagangan/perekonomian.",
+        "Jenis tulisan pada papirus."
+      ],
+      correct:2, symbol:"🪙",
+      hint:"Gambar penguasa pada koin menunjukkan legitimasi kekuasaan; simbol timbangan berkaitan dengan perdagangan."
+    },
+    {
+      name:"RUANG EPIGRAFI", icon:"🪦",
+      desc:"Prasasti diukir pada dinding batu.",
+      question:"Di dinding kuil ditemukan ukiran batu menceritakan kemenangan Firaun. Ilmu bantu paling tepat untuk mengkaji tulisan pada ukiran batu tersebut adalah...",
+      options:[ "Filologi", "Epigrafi", "Antropologi", "Geografi" ],
+      correct:1, symbol:"🪦",
+      hint:"Epigrafi = ilmu tentang prasasti/tulisan yang dipahat pada media keras."
+    },
+    {
+      name:"RUANG SOSIOLOGI", icon:"👥",
+      desc:"Diorama kehidupan masyarakat Mesir Kuno.",
+      question:"Relief kuil menunjukkan Firaun di posisi tertinggi, disusul pendeta, pejabat, prajurit, lalu rakyat. Ilmu bantu untuk menganalisis pembagian peran dan hubungan antarkelompok tersebut adalah...",
+      options:[ "Paleografi", "Sosiologi", "Numismatik", "Filologi" ],
+      correct:1, symbol:"👥",
+      hint:"Sosiologi mempelajari struktur sosial, peran, dan hubungan antar kelompok masyarakat."
+    },
+    {
+      name:"RUANG ANTROPOLOGI", icon:"🧬",
+      desc:"Tradisi pemakaman dan kebudayaan Mesir Kuno.",
+      question:"Peneliti menemukan mumi dengan bekal kubur berupa makanan, perhiasan, dan patung dewa. Ilmu bantu untuk mengkaji kepercayaan dan tradisi pemakaman tersebut adalah...",
+      options:[ "Antropologi", "Numismatik", "Epigrafi", "Geografi" ],
+      correct:0, symbol:"🧬",
+      hint:"Antropologi mengkaji kebudayaan, tradisi, dan kepercayaan manusia, termasuk praktik pemakaman."
+    },
+    {
+      name:"RUANG GEOGRAFI", icon:"🗺️",
+      desc:"Peta Mesir Kuno dengan Sungai Nil.",
+      question:"Mengapa sebagian besar permukiman dan piramida Mesir Kuno terletak di dekat Sungai Nil?",
+      options:[
+        "Karena di dekat sungai terdapat banyak tambang emas.",
+        "Karena Sungai Nil menyediakan air, tanah subur, dan jalur transportasi.",
+        "Karena gurun di Mesir terlalu dingin untuk ditinggali.",
+        "Karena piramida hanya boleh dibangun di tepi sungai."
+      ],
+      correct:1, symbol:"🗺️",
+      hint:"Sungai Nil adalah nadi kehidupan: air, pertanian, dan transportasi."
+    }
+  ];
+
+  // ============================================================
+  // STATE GLOBAL
+  // ============================================================
+  let currentRoomIndex = 0;
+  let score = 0;
+  let completedRooms = new Array(8).fill(false);
+  let symbolsCollected = new Array(8).fill(false);
+  let gameStarted = false;
+  let gameFinished = false;
+  let levelActive = false;        // true saat platformer berjalan
+  let reachedDoor = false;        // karakter sudah sampai pintu
+  let answerLocked = false;       // kunci jawaban setelah benar
+
+  // DOM
+  const canvas = document.getElementById('gameCanvas');
+  const ctx = canvas.getContext('2d');
+  const overlay = document.getElementById('overlay');
+  const overlayTitle = document.getElementById('overlayTitle');
+  const overlayText = document.getElementById('overlayText');
+  const playBtn = document.getElementById('playBtn');
+  const scoreDisplay = document.getElementById('scoreDisplay');
+  const roomsDisplay = document.getElementById('roomsDisplay');
+  const percentDisplay = document.getElementById('percentDisplay');
+  const symbolCollection = document.getElementById('symbolCollection');
+  const miniMap = document.getElementById('miniMap');
+  const challengeQuestion = document.getElementById('challengeQuestion');
+  const optionsContainer = document.getElementById('optionsContainer');
+  const feedback = document.getElementById('feedback');
+  const hintBtn = document.getElementById('hintBtn');
+  const resetBtn = document.getElementById('resetBtn');
+  const nextRoomBtnContainer = document.getElementById('nextRoomBtnContainer');
+  const mainGame = document.getElementById('mainGame');
+  const endScreen = document.getElementById('endScreen');
+
+  // ============================================================
+  // PLATFORMER ENGINE
+  // ============================================================
+  const W = 720, H = 360;
+  const GRAVITY = 0.55;
+  const MOVE_SPEED = 3.4;
+  const JUMP_POWER = -10.5;
+  const GROUND_Y = H - 58;
+
+  let player = {
+    x: 40, y: GROUND_Y - 46,
+    w: 30, h: 46,
+    vx: 0, vy: 0,
+    onGround: true,
+    facing: 1,
+    walkAnim: 0
+  };
+
+  let cameraX = 0;
+  const LEVEL_WIDTH = 1500; // lebar level (piksel dunia)
+  const DOOR_X = LEVEL_WIDTH - 90; // posisi pintu
+
+  // platform / rintangan
+  let platforms = [];   // {x,y,w,h,type} type: 'block','spike','sand'
+  let doorUnlocked = false;
+  let doorAnimT = 0;
+
+  // input
+  const keys = {};
+  window.addEventListener('keydown', e => {
+    const k = e.key.toLowerCase();
+    if (['arrowleft','arrowright','arrowup','arrowdown',' '].includes(e.key.toLowerCase()) || e.code==='Space') {
+      e.preventDefault();
+    }
+    keys[k] = true;
+    if (e.code === 'Space' || k === ' ') {
+      keys['space'] = true;
+      if (levelActive && !reachedDoor) jump();
+    }
+    if (k === 'r' && levelActive) resetLevel();
+    if ((k === 'arrowup' || k === 'w') && levelActive && !reachedDoor) jump();
+  });
+  window.addEventListener('keyup', e => {
+    const k = e.key.toLowerCase();
+    keys[k] = false;
+    if (e.code === 'Space' || k === ' ') keys['space'] = false;
+  });
+
+  // touch / klik canvas -> lompat
+  canvas.addEventListener('pointerdown', e => {
+    if (levelActive && !reachedDoor) {
+      // cek apakah klik di sisi kiri/kanan untuk bergerak? sederhana: klik = lompat
+      jump();
+    }
+  });
+
+  function jump() {
+    if (player.onGround) {
+      player.vy = JUMP_POWER;
+      player.onGround = false;
+    }
+  }
+
+  // Bangun level platformer berdasarkan ruangan
+  function buildLevel(roomIdx) {
+    platforms = [];
+    doorUnlocked = false;
+    doorAnimT = 0;
+    player.x = 40;
+    player.y = GROUND_Y - player.h;
+    player.vx = 0; player.vy = 0;
+    player.onGround = true;
+    player.facing = 1;
+    cameraX = 0;
+    reachedDoor = false;
+
+    // Rintangan bervariasi per level (semakin sulit)
+    const difficulty = roomIdx; // 0..7
+
+    // Blok tanah / batu (platform)
+    // dasar tanah sudah digambar, tapi kita tambah beberapa platform melayang
+    const basePlatforms = [
+      { x: 200, y: GROUND_Y - 70, w: 80, h: 18, type:'block' },
+      { x: 360, y: GROUND_Y - 100, w: 70, h: 18, type:'block' },
+      { x: 520, y: GROUND_Y - 60, w: 90, h: 18, type:'block' },
+      { x: 700, y: GROUND_Y - 120, w: 80, h: 18, type:'block' },
+      { x: 880, y: GROUND_Y - 80, w: 100, h: 18, type:'block' },
+      { x: 1080, y: GROUND_Y - 110, w: 70, h: 18, type:'block' },
+      { x: 1250, y: GROUND_Y - 60, w: 90, h: 18, type:'block' },
+    ];
+
+    // tambahkan rintangan (spike / duri) di tanah
+    const spikePositions = [];
+    for (let i = 0; i < 3 + difficulty; i++) {
+      let sx = 260 + i * 150 + Math.random() * 60;
+      if (sx > DOOR_X - 60) break;
+      spikePositions.push({ x: sx, y: GROUND_Y - 16, w: 24, h: 16, type:'spike' });
+    }
+
+    // tambahkan platform melayang (semakin banyak semakin sulit)
+    platforms = [...basePlatforms.slice(0, 3 + Math.floor(difficulty/2)), ...spikePositions];
+
+    // sort by x
+    platforms.sort((a,b)=>a.x-b.x);
+
+    // Pastikan platform tidak menutupi pintu
+    platforms = platforms.filter(p => p.x + p.w < DOOR_X - 20);
+  }
+
+  function resetLevel() {
+    if (!levelActive) return;
+    buildLevel(currentRoomIndex);
+    doorUnlocked = completedRooms[currentRoomIndex];
+    if (doorUnlocked) doorAnimT = 1;
+    updateHintPanel();
+  }
+
+  // ============================================================
+  // FISIKA & UPDATE
+  // ============================================================
+  function updatePhysics() {
+    if (!levelActive || reachedDoor) return;
+
+    // horizontal input
+    let move = 0;
+    if (keys['arrowleft'] || keys['a']) move -= 1;
+    if (keys['arrowright'] || keys['d']) move += 1;
+
+    player.vx = move * MOVE_SPEED;
+    if (move !== 0) {
+      player.facing = move;
+      player.walkAnim += 0.25;
+    } else {
+      player.walkAnim = 0;
+    }
+
+    // gravitasi
+    player.vy += GRAVITY;
+
+    // gerak horizontal
+    player.x += player.vx;
+    if (player.x < 0) player.x = 0;
+    if (player.x + player.w > DOOR_X + 40) player.x = DOOR_X + 40 - player.w;
+
+    // gerak vertikal
+    player.y += player.vy;
+
+    // cek tabrakan platform
+    player.onGround = false;
+    for (const p of platforms) {
+      if (p.type === 'spike') {
+        // tabrakan dengan spike (persegi)
+        if (rectCollide(player, p)) {
+          // kena duri -> reset posisi (tidak kurangi skor)
+          player.x = 40;
+          player.y = GROUND_Y - player.h;
+          player.vx = 0; player.vy = 0;
+          feedback.textContent = '⚠ Kamu menyentuh duri! Karakter dikembalikan ke awal.';
+          feedback.style.borderLeftColor = '#b84a4a';
+          return;
+        }
+      } else {
+        // platform solid
+        if (rectCollide(player, p)) {
+          // dari atas
+          if (player.vy > 0 && player.y + player.h - player.vy <= p.y + 2) {
+            player.y = p.y - player.h;
+            player.vy = 0;
+            player.onGround = true;
+          }
+          // dari bawah
+          else if (player.vy < 0 && player.y - player.vy >= p.y + p.h - 2) {
+            player.y = p.y + p.h;
+            player.vy = 0;
+          }
+          // dari samping
+          else {
+            if (player.vx > 0) player.x = p.x - player.w;
+            else if (player.vx < 0) player.x = p.x + p.w;
+          }
+        }
+      }
+    }
+
+    // tanah
+    if (player.y + player.h >= GROUND_Y) {
+      player.y = GROUND_Y - player.h;
+      player.vy = 0;
+      player.onGround = true;
+    }
+    if (player.y < 0) { player.y = 0; player.vy = 0; }
+
+    // kamera mengikuti pemain
+    let targetCam = player.x - W/2 + player.w/2;
+    targetCam = Math.max(0, Math.min(targetCam, LEVEL_WIDTH - W));
+    cameraX += (targetCam - cameraX) * 0.15;
+
+    // cek sampai pintu
+    const doorTrigger = DOOR_X - 30;
+    if (!reachedDoor && player.x + player.w >= doorTrigger) {
+      reachedDoor = true;
+      player.vx = 0;
+      player.x = DOOR_X - player.w - 8;
+      onReachedDoor();
+    }
+  }
+
+  function rectCollide(a, b) {
+    return a.x < b.x + b.w && a.x + a.w > b.x && a.y < b.y + b.h && a.y + a.h > b.y;
+  }
+
+  // ============================================================
+  // RENDERING
+  // ============================================================
+  function draw() {
+    ctx.clearRect(0, 0, W, H);
+
+    // langit / dinding piramida
+    const grad = ctx.createLinearGradient(0, 0, 0, H);
+    grad.addColorStop(0, '#1a120b');
+    grad.addColorStop(0.6, '#3a2a18');
+    grad.addColorStop(1, '#5a422a');
+    ctx.fillStyle = grad;
+    ctx.fillRect(0, 0, W, H);
+
+    // pola batu piramida
+    ctx.strokeStyle = '#6b5233';
+    ctx.globalAlpha = 0.35;
+    ctx.lineWidth = 2;
+    for (let yy = 0; yy < H; yy += 34) {
+      ctx.beginPath(); ctx.moveTo(0, yy); ctx.lineTo(W, yy); ctx.stroke();
+    }
+    for (let xx = 0; xx < W; xx += 46) {
+      ctx.beginPath(); ctx.moveTo(xx, 0); ctx.lineTo(xx, H); ctx.stroke();
+    }
+    ctx.globalAlpha = 1;
+
+    // obor di background (posisi tetap, parallax ringan)
+    drawTorches();
+
+    // ====== KONTEN DUNIA (dengan kamera) ======
+    ctx.save();
+    ctx.translate(-cameraX, 0);
+
+    // gambar lantai
+    ctx.fillStyle = '#4a3620';
+    ctx.fillRect(0, GROUND_Y, LEVEL_WIDTH, H - GROUND_Y);
+    // garis lantai batu
+    ctx.strokeStyle = '#6b5233';
+    ctx.lineWidth = 3;
+    for (let x = 0; x < LEVEL_WIDTH; x += 60) {
+      ctx.beginPath();
+      ctx.moveTo(x, GROUND_Y);
+      ctx.lineTo(x + 30, GROUND_Y + 22);
+      ctx.lineTo(x + 60, GROUND_Y);
+      ctx.stroke();
+    }
+    // permukaan tanah atas
+    ctx.fillStyle = '#6b5233';
+    ctx.fillRect(0, GROUND_Y - 4, LEVEL_WIDTH, 6);
+
+    // gambar platform & rintangan
+    for (const p of platforms) {
+      if (p.type === 'spike') {
+        // gambar duri
+        ctx.fillStyle = '#c94a3a';
+        ctx.beginPath();
+        ctx.moveTo(p.x, p.y + p.h);
+        ctx.lineTo(p.x + p.w/2, p.y);
+        ctx.lineTo(p.x + p.w, p.y + p.h);
+        ctx.closePath();
+        ctx.fill();
+        ctx.fillStyle = '#ff9d6b';
+        ctx.beginPath();
+        ctx.moveTo(p.x + 4, p.y + p.h);
+        ctx.lineTo(p.x + p.w/2, p.y + 4);
+        ctx.lineTo(p.x + p.w - 4, p.y + p.h);
+        ctx.closePath();
+        ctx.fill();
+      } else {
+        // blok batu
+        ctx.fillStyle = '#8a6a3a';
+        ctx.fillRect(p.x, p.y, p.w, p.h);
+        ctx.strokeStyle = '#c9a45c';
+        ctx.lineWidth = 2;
+        ctx.strokeRect(p.x, p.y, p.w, p.h);
+        // detail bata
+        ctx.fillStyle = '#a8874a';
+        for (let bx = p.x + 4; bx < p.x + p.w - 4; bx += 18) {
+          ctx.fillRect(bx, p.y + 4, 12, 4);
+        }
+      }
+    }
+
+    // gambar pintu
+    drawDoor();
+
+    // gambar karakter
+    drawPlayer();
+
+    ctx.restore();
+
+    // progress bar (posisi pemain)
+    drawProgressBar();
+  }
+
+  function drawTorches() {
+    const torchPositions = [100, 300, 500, 700, 900, 1100];
+    for (const tx of torchPositions) {
+      const px = tx - cameraX * 0.3;
+      if (px < -30 || px > W + 30) continue;
+      // tongkat
+      ctx.fillStyle = '#5a3e22';
+      ctx.fillRect(px, 30, 10, 30);
+      // api
+      const flick = Math.sin(Date.now()*0.01 + tx)*2;
+      const g = ctx.createRadialGradient(px+5, 26+flick, 2, px+5, 26+flick, 18);
+      g.addColorStop(0, '#fff3c4');
+      g.addColorStop(0.5, '#ff9d2e');
+      g.addColorStop(1, 'transparent');
+      ctx.fillStyle = g;
+      ctx.beginPath();
+      ctx.arc(px+5, 26+flick, 18, 0, Math.PI*2);
+      ctx.fill();
+    }
+  }
+
+  function drawDoor() {
+    const dx = DOOR_X;
+    const dy = GROUND_Y - 90;
+    const dw = 64, dh = 90;
+
+    // glow jika terbuka
+    if (doorUnlocked) {
+      ctx.save();
+      ctx.shadowColor = '#ffd966';
+      ctx.shadowBlur = 30 + Math.sin(Date.now()*0.005)*10;
+      ctx.fillStyle = '#ffd96630';
+      ctx.fillRect(dx-10, dy-10, dw+20, dh+20);
+      ctx.restore();
+    }
+
+    // bingkai pintu
+    ctx.fillStyle = doorUnlocked ? '#b8862e' : '#3a2a18';
+    ctx.beginPath();
+    ctx.moveTo(dx, dy + dh);
+    ctx.lineTo(dx, dy + 30);
+    ctx.quadraticCurveTo(dx, dy, dx + dw/2, dy);
+    ctx.quadraticCurveTo(dx + dw, dy, dx + dw, dy + 30);
+    ctx.lineTo(dx + dw, dy + dh);
+    ctx.closePath();
+    ctx.fill();
+    ctx.strokeStyle = doorUnlocked ? '#fff3c4' : '#8a6a3a';
+    ctx.lineWidth = 4;
+    ctx.stroke();
+
+    // isi pintu
+    if (doorUnlocked) {
+      ctx.fillStyle = `rgba(255,220,120,${0.5 + Math.sin(Date.now()*0.005)*0.3})`;
+      ctx.beginPath();
+      ctx.moveTo(dx+6, dy + dh - 4);
+      ctx.lineTo(dx+6, dy + 34);
+      ctx.quadraticCurveTo(dx+6, dy+8, dx + dw/2, dy+8);
+      ctx.quadraticCurveTo(dx + dw-6, dy+8, dx + dw-6, dy+34);
+      ctx.lineTo(dx + dw-6, dy + dh - 4);
+      ctx.closePath();
+      ctx.fill();
+    } else {
+      // gembok
+      ctx.fillStyle = '#d9b871';
+      ctx.beginPath();
+      ctx.arc(dx + dw/2, dy + dh/2, 10, 0, Math.PI*2);
+      ctx.fill();
+      ctx.fillStyle = '#3a2a18';
+      ctx.font = 'bold 14px serif';
+      ctx.textAlign = 'center';
+      ctx.fillText('🔒', dx + dw/2, dy + dh/2 + 5);
+    }
+
+    // tanda panah / tujuan
+    if (!reachedDoor) {
+      const bounce = Math.sin(Date.now()*0.006)*4;
+      ctx.fillStyle = '#ffd966';
+      ctx.font = 'bold 18px serif';
+      ctx.textAlign = 'center';
+      ctx.fillText('🚪', dx + dw/2, dy - 12 + bounce);
+    }
+  }
+
+  function drawPlayer() {
+    const px = player.x;
+    const py = player.y;
+    const w = player.w;
+    const h = player.h;
+    const walk = Math.sin(player.walkAnim)*3;
+
+    ctx.save();
+    // bayangan
+    ctx.fillStyle = '#00000050';
+    ctx.beginPath();
+    ctx.ellipse(px + w/2, GROUND_Y - 2, w/2 + 2, 5, 0, 0, Math.PI*2);
+    ctx.fill();
+
+    // kaki
+    const legSwing = player.onGround && (Math.abs(player.vx) > 0.5) ? Math.sin(player.walkAnim)*8 : 0;
+    ctx.fillStyle = '#3e2f1f';
+    ctx.fillRect(px + 5 + legSwing, py + h - 12, 7, 12);
+    ctx.fillRect(px + w - 12 - legSwing, py + h - 12, 7, 12);
+
+    // tubuh
+    ctx.fillStyle = '#7a5a34';
+    ctx.fillRect(px + 4, py + 14, w - 8, h - 26);
+    ctx.strokeStyle = '#5c421f';
+    ctx.lineWidth = 2;
+    ctx.strokeRect(px + 4, py + 14, w - 8, h - 26);
+
+    // sabuk / detail
+    ctx.fillStyle = '#c9a45c';
+    ctx.fillRect(px + 6, py + 28, w - 12, 4);
+
+    // kepala
+    ctx.fillStyle = '#e0b88a';
+    ctx.beginPath();
+    ctx.arc(px + w/2, py + 8, 10, 0, Math.PI*2);
+    ctx.fill();
+    // mata
+    ctx.fillStyle = '#2b1d10';
+    const eyeOff = player.facing > 0 ? 3 : -3;
+    ctx.fillRect(px + w/2 + eyeOff - 2, py + 5, 3, 3);
+
+    // topi explorer
+    ctx.fillStyle = '#b8955a';
+    ctx.beginPath();
+    ctx.ellipse(px + w/2, py + 2, 13, 6, 0, 0, Math.PI*2);
+    ctx.fill();
+    ctx.fillRect(px + w/2 - 9, py - 4, 18, 8);
+    // pinggiran topi
+    ctx.fillStyle = '#a07f45';
+    ctx.fillRect(px + w/2 - 14, py + 2, 28, 4);
+
+    // senter / tas
+    ctx.fillStyle = '#d4b06a';
+    ctx.fillRect(px + w - 6, py + 22, 5, 12);
+    ctx.fillStyle = '#fff3c4';
+    ctx.beginPath();
+    ctx.arc(px + w - 3, py + 23, 3, 0, Math.PI*2);
+    ctx.fill();
+
+    ctx.restore();
+  }
+
+  function drawProgressBar() {
+    const barW = W - 40;
+    const barH = 8;
+    const bx = 20;
+    const by = 14;
+
+    ctx.fillStyle = '#1a120b';
+    ctx.beginPath();
+    ctx.roundRect(bx, by, barW, barH, 4);
+    ctx.fill();
+    ctx.strokeStyle = '#7a623f';
+    ctx.lineWidth = 1;
+    ctx.stroke();
+
+    // progress pemain
+    const progress = Math.min(1, player.x / (DOOR_X - 30));
+    const fillW = barW * progress;
+    const grad = ctx.createLinearGradient(bx, 0, bx + barW, 0);
+    grad.addColorStop(0, '#c9a45c');
+    grad.addColorStop(1, '#ffd966');
+    ctx.fillStyle = grad;
+    ctx.beginPath();
+    ctx.roundRect(bx, by, fillW, barH, 4);
+    ctx.fill();
+
+    // ikon pemain
+    ctx.fillStyle = '#ffd966';
+    ctx.beginPath();
+    ctx.arc(bx + fillW, by + barH/2, 6, 0, Math.PI*2);
+    ctx.fill();
+    ctx.fillStyle = '#3e2f1f';
+    ctx.font = '8px serif';
+    ctx.textAlign = 'center';
+    ctx.fillText('🧍', bx + fillW, by + barH/2 + 3);
+
+    // ikon pintu
+    ctx.font = '14px serif';
+    ctx.fillText('🚪', bx + barW + 6, by + barH + 2);
+  }
+
+  // roundRect polyfill
+  CanvasRenderingContext2D.prototype.roundRect = function(x, y, w, h, r) {
+    if (w < 2*r) r = w/2;
+    if (h < 2*r) r = h/2;
+    this.beginPath();
+    this.moveTo(x+r, y);
+    this.arcTo(x+w, y, x+w, y+h, r);
+    this.arcTo(x+w, y+h, x, y+h, r);
+    this.arcTo(x, y+h, x, y, r);
+    this.arcTo(x, y, x+w, y, r);
+    this.closePath();
+    return this;
+  };
+
+  // ============================================================
+  // GAME LOOP
+  // ============================================================
+  function gameLoop() {
+    if (levelActive) {
+      updatePhysics();
+    }
+    draw();
+    requestAnimationFrame(gameLoop);
+  }
+
+  // ============================================================
+  // INTERAKSI PINTU & SOAL
+  // ============================================================
+  function onReachedDoor() {
+    if (completedRooms[currentRoomIndex]) {
+      // sudah selesai -> langsung buka next
+      feedback.textContent = '✅ Ruangan ini sudah diselesaikan. Silakan lanjut!';
+      showNextRoomButton();
+      return;
+    }
+    // tampilkan soal & aktifkan opsi
+    renderQuestion();
+    feedback.textContent = '🚪 Kamu sampai di pintu! Jawab pertanyaan untuk membukanya.';
+    feedback.style.borderLeftColor = '#c9a45c';
+  }
+
+  function renderQuestion() {
+    const room = rooms[currentRoomIndex];
+    challengeQuestion.textContent = room.question;
+    optionsContainer.innerHTML = '';
+    room.options.forEach((opt, idx) => {
+      const btn = document.createElement('button');
+      btn.className = 'option-btn';
+      btn.textContent = opt;
+      btn.addEventListener('click', () => handleAnswer(idx, btn));
+      optionsContainer.appendChild(btn);
+    });
+  }
+
+  function handleAnswer(selectedIdx, btnEl) {
+    if (answerLocked) return;
+    if (completedRooms[currentRoomIndex]) return;
+    const room = rooms[currentRoomIndex];
+    const allOptions = document.querySelectorAll('.option-btn');
+    const isCorrect = (selectedIdx === room.correct);
+
+    if (isCorrect) {
+      answerLocked = true;
+      allOptions.forEach(b => b.disabled = true);
+      score += 10;
+      completedRooms[currentRoomIndex] = true;
+      symbolsCollected[currentRoomIndex] = true;
+
+      btnEl.classList.add('correct-highlight');
+      feedback.textContent = `✅ Benar! +10 poin. ${room.hint}`;
+      feedback.style.borderLeftColor = '#6b8c4a';
+
+      // buka pintu
+      doorUnlocked = true;
+      doorAnimT = 0.01;
+      updateUI();
+
+      // jika semua selesai
+      if (completedRooms.every(Boolean)) {
+        setTimeout(() => showEndScreen(), 900);
+      } else {
+        setTimeout(() => showNextRoomButton(), 600);
+      }
+    } else {
+      // salah -> karakter harus mundur & ulangi level
+      btnEl.classList.add('wrong-highlight');
+      feedback.textContent = `❌ Belum tepat. Karakter terjatuh ke jebakan! Ulangi level dan coba lagi.`;
+      feedback.style.borderLeftColor = '#b84a4a';
+
+      allOptions.forEach(b => b.disabled = true);
+
+      // reset level setelah jeda
+      setTimeout(() => {
+        // hapus highlight
+        allOptions.forEach(b => b.classList.remove('wrong-highlight'));
+        // reset level: kembali ke awal, pintu terkunci
+        levelActive = true;
+        reachedDoor = false;
+        answerLocked = false;
+        buildLevel(currentRoomIndex);
+        renderQuestion(); // tetap tampilkan soal
+        feedback.textContent = '💪 Ulangi level! Capai pintu lagi untuk mencoba menjawab.';
+        feedback.style.borderLeftColor = '#c9a45c';
+        // sembunyikan tombol next jika ada
+        nextRoomBtnContainer.innerHTML = '';
+      }, 1200);
+    }
+  }
+
+  function showNextRoomButton() {
+    if (completedRooms.every(Boolean)) {
+      const finishBtn = document.createElement('button');
+      finishBtn.className = 'btn btn-primary';
+      finishBtn.textContent = '🔓 BUKA PINTU MAKAM FIRAUN';
+      finishBtn.onclick = showEndScreen;
+      nextRoomBtnContainer.innerHTML = '';
+      nextRoomBtnContainer.appendChild(finishBtn);
+      return;
+    }
+
+    const nextBtn = document.createElement('button');
+    nextBtn.className = 'btn btn-primary';
+    nextBtn.textContent = '➡ Ruangan Berikutnya';
+    nextBtn.onclick = () => {
+      // cari ruangan berikutnya yang belum selesai
+      let nextIdx = (currentRoomIndex + 1) % 8;
+      let guard = 0;
+      while (completedRooms[nextIdx] && guard < 8) {
+        nextIdx = (nextIdx + 1) % 8;
+        guard++;
+      }
+      if (completedRooms.every(Boolean)) {
+        showEndScreen();
+        return;
+      }
+      currentRoomIndex = nextIdx;
+      startRoom();
+    };
+    nextRoomBtnContainer.innerHTML = '';
+    nextRoomBtnContainer.appendChild(nextBtn);
+  }
+
+  // ============================================================
+  // START ROOM / LEVEL
+  // ============================================================
+  function startRoom() {
+    const room = rooms[currentRoomIndex];
+    document.querySelector('.mission-badge').textContent = `🔍 ${room.name}`;
+    feedback.textContent = '';
+    challengeQuestion.textContent = 'Capai pintu di ujung kanan untuk membuka soal!';
+    optionsContainer.innerHTML = '';
+    nextRoomBtnContainer.innerHTML = '';
+    answerLocked = false;
+    reachedDoor = false;
+    gameStarted = true;
+
+    buildLevel(currentRoomIndex);
+    doorUnlocked = completedRooms[currentRoomIndex];
+    if (doorUnlocked) doorAnimT = 1;
+
+    levelActive = true;
+    overlay.classList.add('hidden');
+    updateUI();
+    updateHintPanel();
+  }
+
+  function updateHintPanel() {
+    const room = rooms[currentRoomIndex];
+    if (reachedDoor && !completedRooms[currentRoomIndex]) {
+      // sudah sampai pintu, soal sudah tampil
+    } else if (!reachedDoor) {
+      challengeQuestion.textContent = `Capai pintu di ujung kanan! Gunakan ← → dan SPASI untuk melompat.`;
+      optionsContainer.innerHTML = '';
+    }
+  }
+
+  // ============================================================
+  // UI UPDATE
+  // ============================================================
+  function updateUI() {
+    scoreDisplay.textContent = score;
+    const completedCount = completedRooms.filter(Boolean).length;
+    roomsDisplay.textContent = `${completedCount}/8`;
+    const percent = Math.round((score / 80) * 100);
+    percentDisplay.textContent = `${percent}%`;
+
+    // symbols
+    symbolCollection.innerHTML = '';
+    rooms.forEach((room, idx) => {
+      const span = document.createElement('span');
+      span.className = `symbol-badge ${symbolsCollected[idx] ? 'collected' : ''}`;
+      span.textContent = room.symbol;
+      span.title = room.name;
+      symbolCollection.appendChild(span);
+    });
+
+    // minimap
+    miniMap.innerHTML = '';
+    rooms.forEach((room, idx) => {
+      const dot = document.createElement('div');
+      dot.className = `room-dot ${completedRooms[idx] ? 'completed' : ''} ${currentRoomIndex === idx && !completedRooms[idx] ? 'active' : ''}`;
+      dot.textContent = idx+1;
+      dot.title = room.name;
+      miniMap.appendChild(dot);
+    });
+  }
+
+  // ============================================================
+  // END SCREEN
+  // ============================================================
+  function showEndScreen() {
+    if (gameFinished) return;
+    gameFinished = true;
+    levelActive = false;
+    mainGame.classList.add('hidden');
+    endScreen.classList.remove('hidden');
+
+    const totalScore = score;
+    const percent = Math.round((score / 80) * 100);
+    let title = '';
+    if (percent >= 80) title = '🏆 ARKEOLOG HEBAT';
+    else if (percent >= 50) title = '📜 PENELITI SEJARAH';
+    else title = '🔍 PENJELAJAH PEMULA';
+
+    const rekap = rooms.map(r => `<div class="ilmu-item"><strong>${r.icon} ${r.name.replace('RUANG ','')}</strong><br>${r.hint}</div>`).join('');
+
+    endScreen.innerHTML = `
+      <div class="end-title">SELAMAT! MISI BERHASIL!</div>
+      <div style="font-size:.92rem; line-height:1.6; max-width:700px; margin:0 auto 14px;">
+        Kamu telah berhasil menemukan makam Firaun dan mengungkap rahasia peradaban Mesir Kuno.<br>
+        Keberhasilanmu bukan hanya menemukan harta karun, melainkan memahami bagaimana para sejarawan menggunakan berbagai ilmu bantu untuk merekonstruksi kehidupan manusia pada masa lampau.
+      </div>
+      <div class="final-score">Skor Akhir: ${totalScore} / 80 (${percent}%) — ${title}</div>
+      <div class="rekap-ilmu">${rekap}</div>
+      <button class="btn btn-primary" onclick="location.reload()" style="margin-top:12px;">🔄 MAIN LAGI</button>
+    `;
+  }
+
+  // ============================================================
+  // INIT
+  // ============================================================
+  function init() {
+    buildLevel(0);
+    updateUI();
+    challengeQuestion.textContent = 'Tekan tombol "MULAI PETUALANGAN" untuk memulai!';
+    feedback.textContent = '';
+    optionsContainer.innerHTML = '';
+    overlay.classList.remove('hidden');
+
+    playBtn.addEventListener('click', () => {
+      overlay.classList.add('hidden');
+      startRoom();
+    });
+
+    hintBtn.addEventListener('click', () => {
+      if (!gameStarted) { alert('Mulai permainan terlebih dahulu!'); return; }
+      const room = rooms[currentRoomIndex];
+      if (reachedDoor && !completedRooms[currentRoomIndex]) {
+        feedback.textContent = `💡 Petunjuk: ${room.hint}`;
+        feedback.style.borderLeftColor = '#dbbd80';
+      } else {
+        feedback.textContent = '💡 Capai pintu di ujung kanan untuk membuka soal.';
+        feedback.style.borderLeftColor = '#dbbd80';
+      }
+    });
+
+    resetBtn.addEventListener('click', () => {
+      if (!gameStarted) return;
+      // reset seluruh permainan
+      currentRoomIndex = 0;
+      score = 0;
+      completedRooms = new Array(8).fill(false);
+      symbolsCollected = new Array(8).fill(false);
+      gameFinished = false;
+      answerLocked = false;
+      reachedDoor = false;
+      levelActive = false;
+      endScreen.classList.add('hidden');
+      mainGame.classList.remove('hidden');
+      nextRoomBtnContainer.innerHTML = '';
+      updateUI();
+      startRoom();
+    });
+
+    gameLoop();
+  }
+
+  init();
+})();
+</script>
+</body>
+</html>
